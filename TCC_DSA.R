@@ -4,8 +4,8 @@
 library(dplyr)
 library(tidyr)
 
-#Nesse projeto estamos lidando com tres diferentes dataframes que iremos mesclar no data_tcc.
-#Utilizaremos o data_tcc para as analises.
+#Nesse projeto estamos lidando com diferentes dataframes que iremos mesclar no data_tcc qdo se trata de todos os paises e no data_tccbrasil
+#para dados do Brasil.
 
 #Manipulacao do dataset baixado do Kaggle
 
@@ -13,11 +13,11 @@ library(tidyr)
 kaggledatabase <- read.csv(file.choose())
 
 #Selecionar apenas as colunas relevantes
-kaggledatabasewr <- kaggledatabase[, c("Entity", "Year", "Access.to.electricity....of.population.", "Value_co2_emissions_kt_by_country",
+kaggledatabase <- kaggledatabase[, c("Entity", "Year", "Access.to.electricity....of.population.", "Value_co2_emissions_kt_by_country",
                                        "gdp_per_capita", "Land.Area.Km2.")]
 
 #Renomear as colunas
-names(kaggledatabasewr) <- c("pais", "ano", "acesso_eletricidade_populacao_porcent",
+names(kaggledatabase) <- c("pais", "ano", "acesso_eletricidade_populacao_porcent",
                              "CO2_emissao_kt_por_pais",
                              "pib_per_capita_dolar", "area_km2")
 
@@ -26,11 +26,11 @@ hdi <- read.csv(choose.files())
 
 #Selecionar apenas as colunas relevantes
 colunas <- c("country", "hdicode", paste0("hdi_", 2000:2020))
-idh_tcc <- hdi %>%
+hdi <- hdi %>%
   select(all_of(colunas))
 
 #Filtrar dados relevantes em Country 
-idh_tcc <- idh_tcc %>%
+hdi <- hdi %>%
   filter(country != "World" & 
            country != "Very high human development" & 
            country != "Sub-Saharan Africa" & 
@@ -45,14 +45,14 @@ idh_tcc <- idh_tcc %>%
            country != "East Asia and the Pacific")
 
 #Renomear as colunas country e hdicode para nomes em portugues
-names(idh_tcc)[1] <- "pais"
-names(idh_tcc)[2] <- "idh_nivel"
+names(hdi)[1] <- "pais"
+names(hdi)[2] <- "idh_nivel"
 
 #Renomear as colunas para substituir "hdi_" pelo ano correspondente
-names(idh_tcc)[grep("^hdi_", names(idh_tcc))] <- gsub("^hdi_(\\d{4})$", "\\1", names(idh_tcc)[grep("^hdi_", names(idh_tcc))])
+names(hdi)[grep("^hdi_", names(hdi))] <- gsub("^hdi_(\\d{4})$", "\\1", names(hdi)[grep("^hdi_", names(hdi))])
 
-#Transpor a tabela idh_tcc
-idh_transposta <- pivot_longer(idh_tcc, cols = -c(pais, idh_nivel), names_to = "ano", values_to = "idh_valor")
+#Transpor a tabela 
+hdi <- pivot_longer(hdi, cols = -c(pais, idh_nivel), names_to = "ano", values_to = "idh_valor")
 
 #Manipulacao de dados e data wrangling em arquivo baixado diretamente do databank.worldbank.org
 
@@ -78,17 +78,14 @@ worldbankdatabase <- worldbankdatabase %>%
 worldbankdatabase <- worldbankdatabase %>%
   pivot_wider(names_from = series.name, values_from = valor)
 
-#Juncao dos dois conjuntos de dados: kaggledatabasewr e worldbankdatabase
-data_tcc <- merge(kaggledatabasewr, worldbankdatabase, by = c("pais", "ano"))
+#Juncao dos dois conjuntos de dados: kaggledatabase e worldbankdatabase
+data_tcc <- merge(kaggledatabase, worldbankdatabase, by = c("pais", "ano"))
 
-#Filtrar apenas os paises presentes no conjunto de dados kaggledatabasewr
-data_tcc <- data_tcc[data_tcc$pais %in% kaggledatabasewr$pais, ]
+#Filtrar apenas os paises presentes no conjunto de dados kaggledatabase
+data_tcc <- data_tcc[data_tcc$pais %in% kaggledatabase$pais, ]
 
 #Converter o ano para formato numerico
 data_tcc$ano <- as.numeric(data_tcc$ano)
-
-#Arredondar a coluna "acesso_eletricidade_populacao_percent" para duas casas decimais
-data_tcc$acesso_eletricidade_populacao_percent <- round(data_tcc$acesso_eletricidade_populacao_percent, 2)
 
 #Arredondar a coluna "pib_per_capita_dolar" para duas casas decimais
 data_tcc$pib_per_capita_dolar <- round(data_tcc$pib_per_capita_dolar, 2)
@@ -117,51 +114,138 @@ data_tcc$consumo_kwh_per_capita <- as.numeric(data_tcc$consumo_kwh_per_capita)
 #Remover casas decimais da coluna "consumo_kwh_per_capita"
 data_tcc$`consumo_kwh_per_capita` <- round(data_tcc$`consumo_kwh_per_capita`, digits = 0)
 
-#Merge da tabela idh_tcc com data_tcc
-data_tcc <- merge(data_tcc, idh_transposta, by = c("pais", "ano"), all.x = TRUE)
+#Merge da tabela hdi com data_tcc
+data_tcc <- merge(data_tcc, hdi, by = c("pais", "ano"), all.x = TRUE)
 
 #Verificar paises da tabela (atualmente temos 195 paises reconhecidos pela ONU)
 paises_unicos_data_tcc <- unique(data_tcc$pais)
 
-#Lista de países para remover
+#Lista de paises para remover
 paises_remover <- c("Aruba", "Bermuda", "Cayman Islands", "New Caledonia", "Puerto Rico")
 
-#Remover linhas correspondentes aos países a remover
+#Remover linhas correspondentes aos paises a remover
 data_tcc <- data_tcc[!(data_tcc$`pais` %in% paises_remover), ]
 
+#Adicionar mais dados sobre energia
+dataenergia <- read.csv(file.choose())
 
-#Tratamento de Dados Ausentes
+# Renomeando as colunas
+colnames(dataenergia) <- c("pais", "pais_codigo", "series_name", "series_code", 
+                           as.numeric(2000:2020))
 
-#Verificar o numero de dados ausentes em cada coluna
-missing_data <- colSums(is.na(data_tcc))
+# Removendo as colunas pais_codigo e series_code
+dataenergia <- dataenergia[, !(colnames(dataenergia) %in% c("pais_codigo", "series_code"))]
 
-#Mostrar o resultado
-print(missing_data)
+# Transpor o dataenergia usando pivot_longer
+dataenergia <- pivot_longer(dataenergia, cols = starts_with("20"),
+                                       names_to = "ano", values_to = "valor")
 
+# Convertendo a coluna 'valor' para numerica
+dataenergia$valor <- as.numeric(dataenergia$valor)
 
-#Correlacao entre os dados
+# Agrupando os dados por pais, ano e tipo de serie e calculando a media dos valores
+dataenergia <- dataenergia %>%
+  group_by(pais, ano, series_name) %>%
+  summarise(valor = mean(valor))
 
-#Matriz de correlação entre as variáveis selecionadas
+# Espalhando os valores da coluna series_name
+dataenergia <- spread(dataenergia, key = series_name, value = valor)
 
-#Imprime a matriz de correlação
-print(correlation_matrix)
+# Realizar o merge dos datasets, mantendo apenas os paises presentes em data_tcc
+data_tcc <- merge(data_tcc, dataenergia, by = c("ano", "pais"), all.x = TRUE)
 
-#Essa matriz mostra as correlações entre as variáveis. 
-#Cada célula indica o coeficiente de correlação entre duas variáveis. 
-#Um valor próximo de 1 indica uma correlação positiva forte,
-#enquanto um valor próximo de -1 indica uma correlação negativa forte. 
-#Um valor próximo de 0 indica uma correlação fraca ou inexistente.
-#
-#Podemos ver que
-#Ha uma forte correlacao positiva entre acesso a eletricidade e expectativa de vida, 
-#assim como entre acesso a eletricidade e PIB per capita.
-#Ha uma correlacao positiva moderada entre acesso a eletricidade e CO2 emissao, 
-#bem como entre PIB per capita e expectativa de vida.
-#Ha uma correlacao positiva fraca entre CO2 emissao e expectativa de vida, 
-#e entre CO2 emissao e PIB per capita.
-#A populacao total tem uma correlacao moderada positiva com CO2 emissao 
-#e uma correlacao fraca negativa com PIB per capita.
+# Desativar a formatacao em notacao cientifica
+options(scipen = 999)
 
+# Usando subset para excluir a coluna V1
+data_tcc <- subset(data_tcc, select = -V1)
 
-#Analise exploratoria de dados
+# Ou usando o operador de selecao de colunas
+data_tcc <- data_tcc[, !names(data_tcc) %in% "V1"]
 
+# Verificar novamente a estrutura do dataframe data_tcc
+str(data_tcc)
+
+#Filtrar tabela para dados apenas do Brasil
+data_tccbrasil <- subset(data_tcc, pais == "Brazil")
+
+#Verificar nome das colunas do data_tccbrasil
+colunas <- names(data_tccbrasil)
+print(colunas)
+
+# Renomear as colunas em portugues
+colnames(data_tccbrasil) <- c(
+  "ano",
+  "pais",
+  "acesso_eletricidade_populacao_porcent",
+  "CO2_emissao_kt_por_pais",
+  "pib_per_capita_dolar",
+  "area_km2",
+  "expectativa_vida",
+  "total_populacao",
+  "consumo_kwh_per_capita",
+  "idh_nivel",
+  "idh_valor",
+  "Energia_Alternativa_e_Nuclear_percent_total",
+  "Producao_Eletricidade_de_Carvao_percent_total",
+  "Producao_Eletricidade_de_Hidreletrica_percent_total",
+  "Producao_Eletricidade_de_Gas_Natural_percent_total",
+  "Producao_Eletricidade_de_Nuclear_percent_total",
+  "Producao_Eletricidade_de_Petroleo_percent_total",
+  "Producao_Eletricidade_de_Combustiveis_Fosseis_percent_total",
+  "Producao_Eletricidade_de_Renovavel_excluindo_Hidreletrica_percent_total",
+  "Producao_Eletricidade_de_Renovavel_excluindo_Hidreletrica_kWh",
+  "Consumo_Energia_Combustiveis_Fosseis_percent_total",
+  "Producao_Energia_Eletrica_Renovavel_percent_total",
+  "Consumo_Energia_Renovavel_percent_total_consumo_final_energia"
+)
+
+# Renomear as colunas em portugues
+colnames(data_tcc) <- c(
+  "ano",
+  "pais",
+  "acesso_eletricidade_populacao_porcent",
+  "CO2_emissao_kt_por_pais",
+  "pib_per_capita_dolar",
+  "area_km2",
+  "expectativa_vida",
+  "total_populacao",
+  "consumo_kwh_per_capita",
+  "idh_nivel",
+  "idh_valor",
+  "Energia_Alternativa_e_Nuclear_percent_total",
+  "Producao_Eletricidade_de_Carvao_percent_total",
+  "Producao_Eletricidade_de_Hidreletrica_percent_total",
+  "Producao_Eletricidade_de_Gas_Natural_percent_total",
+  "Producao_Eletricidade_de_Nuclear_percent_total",
+  "Producao_Eletricidade_de_Petroleo_percent_total",
+  "Producao_Eletricidade_de_Combustiveis_Fosseis_percent_total",
+  "Producao_Eletricidade_de_Renovavel_excluindo_Hidreletrica_percent_total",
+  "Producao_Eletricidade_de_Renovavel_excluindo_Hidreletrica_kWh",
+  "Consumo_Energia_Combustiveis_Fosseis_percent_total",
+  "Producao_Energia_Eletrica_Renovavel_percent_total",
+  "Consumo_Energia_Renovavel_percent_total_consumo_final_energia"
+)
+
+# Alterar o valor "Brazil" para "Brasil" na coluna pais
+data_tccbrasil$pais <- gsub("\\bBrazil\\b", "Brasil", data_tccbrasil$pais)
+
+# Verificar onde há NA em cada coluna
+na_count <- colSums(is.na(data_tccbrasil))
+
+# Exibir contagem de NA por coluna
+print(na_count)
+
+# Selecionar apenas as colunas numéricas
+colunas_numericas <- sapply(data_tccbrasil, is.numeric)
+
+# Calcular a média de cada coluna numérica
+media_colunas <- colMeans(data_tccbrasil[, colunas_numericas], na.rm = TRUE)
+
+# Preencher os valores ausentes com a média de cada coluna
+data_tccbrasil <- data_tccbrasil %>%
+  mutate(across(where(is.numeric), ~replace_na(., media_colunas[match(cur_column(), names(media_colunas))])))
+
+# Verificar novamente se há valores ausentes
+na_count <- colSums(is.na(data_tccbrasil))
+print(na_count)
