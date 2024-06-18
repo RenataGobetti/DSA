@@ -230,11 +230,17 @@ colnames(data_tcc) <- c(
 # Alterar o valor "Brazil" para "Brasil" na coluna pais
 data_tccbrasil$pais <- gsub("\\bBrazil\\b", "Brasil", data_tccbrasil$pais)
 
+#ANALISE DESCRITIVA#
+
 # Verificar onde há NA em cada coluna
 na_count <- colSums(is.na(data_tccbrasil))
 
 # Exibir contagem de NA por coluna
 print(na_count)
+
+# Verificar proporção de valores ausentes em cada coluna
+na_proportion <- na_count / nrow(data_tccbrasil)
+print(na_proportion)
 
 # Selecionar apenas as colunas numéricas
 colunas_numericas <- sapply(data_tccbrasil, is.numeric)
@@ -249,3 +255,217 @@ data_tccbrasil <- data_tccbrasil %>%
 # Verificar novamente se há valores ausentes
 na_count <- colSums(is.na(data_tccbrasil))
 print(na_count)
+
+# Carregar pacotes necessários
+library(dplyr)
+library(tibble)
+library(knitr)
+
+# Função para calcular a moda
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+# Calcular estatísticas descritivas manualmente para cada variável
+acesso_stats <- c(min(data_tccbrasil$acesso_eletricidade_populacao_porcent, na.rm = TRUE),
+                  quantile(data_tccbrasil$acesso_eletricidade_populacao_porcent, 0.25, na.rm = TRUE),
+                  median(data_tccbrasil$acesso_eletricidade_populacao_porcent, na.rm = TRUE),
+                  mean(data_tccbrasil$acesso_eletricidade_populacao_porcent, na.rm = TRUE),
+                  quantile(data_tccbrasil$acesso_eletricidade_populacao_porcent, 0.75, na.rm = TRUE),
+                  max(data_tccbrasil$acesso_eletricidade_populacao_porcent, na.rm = TRUE),
+                  mode(data_tccbrasil$acesso_eletricidade_populacao_porcent),
+                  var(data_tccbrasil$acesso_eletricidade_populacao_porcent, na.rm = TRUE),
+                  sd(data_tccbrasil$acesso_eletricidade_populacao_porcent, na.rm = TRUE))
+
+co2_stats <- c(min(data_tccbrasil$CO2_emissao_kt_por_pais, na.rm = TRUE),
+               quantile(data_tccbrasil$CO2_emissao_kt_por_pais, 0.25, na.rm = TRUE),
+               median(data_tccbrasil$CO2_emissao_kt_por_pais, na.rm = TRUE),
+               mean(data_tccbrasil$CO2_emissao_kt_por_pais, na.rm = TRUE),
+               quantile(data_tccbrasil$CO2_emissao_kt_por_pais, 0.75, na.rm = TRUE),
+               max(data_tccbrasil$CO2_emissao_kt_por_pais, na.rm = TRUE),
+               mode(data_tccbrasil$CO2_emissao_kt_por_pais),
+               var(data_tccbrasil$CO2_emissao_kt_por_pais, na.rm = TRUE),
+               sd(data_tccbrasil$CO2_emissao_kt_por_pais, na.rm = TRUE))
+
+pib_stats <- c(min(data_tccbrasil$pib_per_capita_dolar, na.rm = TRUE),
+               quantile(data_tccbrasil$pib_per_capita_dolar, 0.25, na.rm = TRUE),
+               median(data_tccbrasil$pib_per_capita_dolar, na.rm = TRUE),
+               mean(data_tccbrasil$pib_per_capita_dolar, na.rm = TRUE),
+               quantile(data_tccbrasil$pib_per_capita_dolar, 0.75, na.rm = TRUE),
+               max(data_tccbrasil$pib_per_capita_dolar, na.rm = TRUE),
+               mode(data_tccbrasil$pib_per_capita_dolar),
+               var(data_tccbrasil$pib_per_capita_dolar, na.rm = TRUE),
+               sd(data_tccbrasil$pib_per_capita_dolar, na.rm = TRUE))
+
+expectativa_stats <- c(min(data_tccbrasil$expectativa_vida, na.rm = TRUE),
+                       quantile(data_tccbrasil$expectativa_vida, 0.25, na.rm = TRUE),
+                       median(data_tccbrasil$expectativa_vida, na.rm = TRUE),
+                       mean(data_tccbrasil$expectativa_vida, na.rm = TRUE),
+                       quantile(data_tccbrasil$expectativa_vida, 0.75, na.rm = TRUE),
+                       max(data_tccbrasil$expectativa_vida, na.rm = TRUE),
+                       mode(data_tccbrasil$expectativa_vida),
+                       var(data_tccbrasil$expectativa_vida, na.rm = TRUE),
+                       sd(data_tccbrasil$expectativa_vida, na.rm = TRUE))
+
+consumo_stats <- c(min(data_tccbrasil$consumo_kwh_per_capita, na.rm = TRUE),
+                   quantile(data_tccbrasil$consumo_kwh_per_capita, 0.25, na.rm = TRUE),
+                   median(data_tccbrasil$consumo_kwh_per_capita, na.rm = TRUE),
+                   mean(data_tccbrasil$consumo_kwh_per_capita, na.rm = TRUE),
+                   quantile(data_tccbrasil$consumo_kwh_per_capita, 0.75, na.rm = TRUE),
+                   max(data_tccbrasil$consumo_kwh_per_capita, na.rm = TRUE),
+                   mode(data_tccbrasil$consumo_kwh_per_capita),
+                   var(data_tccbrasil$consumo_kwh_per_capita, na.rm = TRUE),
+                   sd(data_tccbrasil$consumo_kwh_per_capita, na.rm = TRUE))
+
+idh_stats <- c(min(data_tccbrasil$idh_valor, na.rm = TRUE),
+               quantile(data_tccbrasil$idh_valor, 0.25, na.rm = TRUE),
+               median(data_tccbrasil$idh_valor, na.rm = TRUE),
+               mean(data_tccbrasil$idh_valor, na.rm = TRUE),
+               quantile(data_tccbrasil$idh_valor, 0.75, na.rm = TRUE),
+               max(data_tccbrasil$idh_valor, na.rm = TRUE),
+               mode(data_tccbrasil$idh_valor),
+               var(data_tccbrasil$idh_valor, na.rm = TRUE),
+               sd(data_tccbrasil$idh_valor, na.rm = TRUE))
+
+# Criar um dataframe com as estatísticas descritivas
+stats_df <- data.frame(
+  Estatística = c("Mínimo", "1º Quartil", "Mediana", "Média", "3º Quartil", "Máximo", "Moda", "Variância", "Desvio Padrão"),
+  `Acesso à Eletricidade (%)` = acesso_stats,
+  `Emissão de CO2 (kt)` = co2_stats,
+  `PIB per Capita (USD)` = pib_stats,
+  `Expectativa de Vida (anos)` = expectativa_stats,
+  `Consumo de Energia Elétrica (kWh per capita)` = consumo_stats,
+  `IDH` = idh_stats
+)
+
+# Exibir a tabela
+print(stats_df)
+
+
+# Carregar o pacote knitr
+library(knitr)
+
+# Exibir a tabela de forma amigável
+kable(stats_df, caption = "Estatísticas Descritivas dos Indicadores do Brasil (2000-2020)")
+
+# Instalar e carregar o pacote ggplot2
+install.packages("ggplot2")
+library(ggplot2)
+
+# Gráfico de Linha para Mostrar a Evolução do Acesso à Eletricidade ao Longo do Tempo
+ggplot(data_tccbrasil, aes(x = ano, y = acesso_eletricidade_populacao_porcent)) +
+  geom_line(color = "blue") +
+  labs(title = "Acesso à Eletricidade (% da População) ao Longo do Tempo", x = "Ano", y = "Acesso à Eletricidade (%)")
+
+# Emissão de CO2 ao longo do tempo
+ggplot(data_tccbrasil, aes(x = ano, y = CO2_emissao_kt_por_pais)) +
+  geom_line(color = "red") +
+  labs(title = "Emissão de CO2 ao Longo do Tempo", x = "Ano", y = "Emissão de CO2 (kt)")
+
+# PIB per capita ao longo do tempo
+ggplot(data_tccbrasil, aes(x = ano, y = pib_per_capita_dolar)) +
+  geom_line(color = "green") +
+  labs(title = "PIB per Capita ao Longo do Tempo", x = "Ano", y = "PIB per Capita (USD)")
+
+# Expectativa de vida ao longo do tempo
+ggplot(data_tccbrasil, aes(x = ano, y = expectativa_vida)) +
+  geom_line(color = "purple") +
+  labs(title = "Expectativa de Vida ao Longo do Tempo", x = "Ano", y = "Expectativa de Vida (anos)")
+
+# Consumo de energia elétrica per capita ao longo do tempo
+ggplot(data_tccbrasil, aes(x = ano, y = consumo_kwh_per_capita)) +
+  geom_line(color = "orange") +
+  labs(title = "Consumo de Energia Elétrica per Capita ao Longo do Tempo", x = "Ano", y = "Consumo de Energia Elétrica (kWh per capita)")
+
+# IDH ao longo do tempo
+ggplot(data_tccbrasil, aes(x = ano, y = idh_valor)) +
+  geom_line(color = "darkblue") +
+  labs(title = "Índice de Desenvolvimento Humano (IDH) ao Longo do Tempo", x = "Ano", y = "IDH")
+
+#Analise Quantitativa
+
+# Verificar os tipos de colunas
+str(data_tccbrasil)
+
+# Selecionar apenas colunas numéricas
+numeric_cols <- sapply(data_tccbrasil, is.numeric)
+data_numeric <- data_tccbrasil[, numeric_cols]
+
+# Calcular a matriz de correlação
+cor_matrix <- cor(data_numeric, use = "complete.obs")
+
+# Calcular o desvio padrão de cada coluna
+std_devs <- apply(data_numeric, 2, sd, na.rm = TRUE)
+
+# Identificar colunas com desvio padrão zero
+zero_sd_cols <- names(std_devs[std_devs == 0])
+print(zero_sd_cols)
+
+# Instalar e carregar os pacotes necessários
+install.packages("ggplot2")
+install.packages("ggcorrplot")
+library(ggplot2)
+library(ggcorrplot)
+
+# Verificar os tipos de colunas
+str(data_tccbrasil)
+
+# Exibir a matriz de correlação
+print(cor_matrix)
+
+
+# Calcular a matriz de correlação
+cor_matrix <- cor(data_tccbrasil[, c("acesso_eletricidade_populacao_porcent", "CO2_emissao_kt_por_pais", 
+                                     "pib_per_capita_dolar", "expectativa_vida", 
+                                     "consumo_kwh_per_capita", "idh_valor")], use="complete.obs")
+
+# Visualizar a matriz de correlação
+print(cor_matrix)
+
+#Regressao Linear Simples
+# Regressão linear simples para prever o IDH com base no PIB per capita
+modelo_pib_idh <- lm(idh_valor ~ pib_per_capita_dolar, data = data_tccbrasil)
+summary(modelo_pib_idh)
+
+# Visualização
+ggplot(data_tccbrasil, aes(x = pib_per_capita_dolar, y = idh_valor)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Relação entre PIB per Capita e IDH", x = "PIB per Capita (USD)", y = "IDH")
+
+#Regressao Linear Multipla
+# Regressão linear múltipla para prever o IDH com base em múltiplas variáveis
+modelo_multiplo <- lm(idh_valor ~ pib_per_capita_dolar + acesso_eletricidade_populacao_porcent + 
+                        expectativa_vida + consumo_kwh_per_capita, data = data_tccbrasil)
+summary(modelo_multiplo)
+
+#Analise de Series Temporais
+# Carregar o pacote forecast
+install.packages("forecast")
+library(forecast)
+
+# Preparar os dados para a análise de séries temporais
+ts_data <- ts(data_tccbrasil$idh_valor, start = c(2000), frequency = 1)
+
+# Modelo ARIMA para previsão do IDH
+modelo_arima <- auto.arima(ts_data)
+summary(modelo_arima)
+
+# Previsão para os próximos 5 anos
+forecast_arima <- forecast(modelo_arima, h = 5)
+plot(forecast_arima)
+
+#Extracao para PowerBI
+# Exportar o dataframe data_tccbrasil para um arquivo CSV
+write.csv(data_tccbrasil, "data_tccbrasil.csv", row.names = FALSE)
+
+# Exportar o dataframe data_tccbrasil para um arquivo CSV no diretório especificado
+write.csv(data_tccbrasil, "C:/Users/renat/OneDrive/Área de Trabalho/Renata/GitHub/data_tccbrasil.csv", row.names = FALSE)
+
+# Exportar o dataframe data_tcc para um arquivo CSV
+write.csv(data_tcc, "data_tcc.csv", row.names = FALSE)
+
+# Exportar o dataframe data_tccbrasil para um arquivo CSV no diretório especificado
+write.csv(data_tcc, "C:/Users/renat/OneDrive/Área de Trabalho/Renata/GitHub/data_tcc.csv", row.names = FALSE)
+
